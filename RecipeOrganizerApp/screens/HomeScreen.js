@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button, ImageBackground, useWindowDimensions, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, Button, ImageBackground, useWindowDimensions, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -20,7 +21,6 @@ const HomeScreen = () => {
     Desserts: require('../assets/images/Desserts.jpg'),
   };
 
-  
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -30,30 +30,32 @@ const HomeScreen = () => {
         <View style={styles.overlay}>
           <Text style={styles.overlayText}>Recipe Organizer</Text>
         </View>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddRecipe')}
+        >
+          <MaterialIcons name="add" size={24} color="white" />
+        </TouchableOpacity>
       </ImageBackground>
       <View style={[styles.whiteBackground, { height: whiteBackgroundHeight }]}>
         <View style={styles.overlayLabel}>
           <Text style={styles.overlayLabelText}>Categories</Text>
         </View>
-        
-      <ScrollView horizontal={true} style={styles.scrollContainer}>
-        {Object.keys(images).map((key, index) => (
-          <View key={index} style={styles.imageContainer}>
-          <View style={styles.imageWrapper}>
-            <Image
-              source={images[key]}
-              style={styles.image}
-            />
-            <View style={styles.overlayImage}>
-              <Text style={styles.overlayImageText}>{key}</Text>
+        <ScrollView horizontal={true} style={styles.scrollContainer}>
+          {Object.keys(images).map((key, index) => (
+            <View key={index} style={styles.imageContainer}>
+              <View style={styles.imageWrapper}>
+                <Image
+                  source={images[key]}
+                  style={styles.image}
+                />
+                <View style={styles.overlayImage}>
+                  <Text style={styles.overlayImageText}>{key}</Text>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
-        
-        
-        ))}
-      </ScrollView>
-
+          ))}
+        </ScrollView>
         <View style={styles.buttonContainer}>
           <Button title="Go to Initial Route" onPress={goToInitialRoute} />
         </View>
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
   overlayLabel: {
     position: 'absolute',
     top: 20,
-    right: 20,
+    right: 25,
     backgroundColor: '#08A045',
     borderRadius: 35,
     paddingVertical: 10,
@@ -116,8 +118,8 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     marginTop: 80,
-    marginLeft: 20,
-    marginRight:20,
+    marginLeft: 25,
+    marginRight: 25,
     marginBottom: 20,
   },
   imageContainer: {
@@ -151,8 +153,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  
   buttonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButton: {
+    position: 'absolute',
+    bottom: 45,
+    right: 25,
+    backgroundColor: '#08A045',
+    borderRadius: 50,
+    width: 35,
+    height: 35,
     justifyContent: 'center',
     alignItems: 'center',
   },
