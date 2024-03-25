@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
 
 const SplashScreen = ({ navigation }) => {
   const [resetTimeout, setResetTimeout] = useState(false);
@@ -25,7 +25,10 @@ const SplashScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text>Splash Screen</Text>
+      <ActivityIndicator size={175} color="#08A045" style={styles.activityIndicator} />
+      <View style={styles.imageContainer}>
+        <Image source={require('../assets/images/cooking.png')} style={styles.image} />
+      </View>
     </View>
   );
 };
@@ -35,6 +38,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  activityIndicator: {
+    position: 'absolute',
+  },
+  imageContainer: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  image: {
+    width: 100, // Set the width of the image as needed
+    height: 100, // Set the height of the image as needed
   },
 });
 
