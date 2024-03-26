@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect, createRef } from 'react';
 import { View, Text, StyleSheet, Button, ImageBackground, useWindowDimensions, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { FlatList } from 'react-native';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const window = useWindowDimensions();
+  const flatListRef = createRef(); // Use createRef instead of useRef
 
   const goToInitialRoute = () => {
     navigation.navigate('Splash');
@@ -20,6 +22,30 @@ const HomeScreen = () => {
     Dinner: require('../assets/images/Dinner.jpg'),
     Desserts: require('../assets/images/Desserts.jpg'),
   };
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    { id: 1, image: require('../assets/images/Slide1.jpg') },
+    { id: 2, image: require('../assets/images/Slide2.jpg') },
+    { id: 3, image: require('../assets/images/Slide3.jpg') },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Calculate the next slide index
+      const nextSlide = (currentSlide + 1) % slides.length;
+      // Scroll to the next slide
+      flatListRef.current?.scrollToIndex({ index: nextSlide, animated: true });
+      // Update the current slide state
+      setCurrentSlide(nextSlide);
+    }, 2200); // Change slide every 3 seconds
+  
+    return () => clearInterval(interval);
+  }, [currentSlide]); // Trigger the effect whenever the currentSlide changes
+
+  // Calculate carousel item width dynamically
+  const carouselItemWidth = window.width - 50;
 
   return (
     <View style={styles.container}>
@@ -56,6 +82,26 @@ const HomeScreen = () => {
             </View>
           ))}
         </ScrollView>
+        <View style={styles.ideasContainer}>
+          <View style={styles.overlayLabelideas}>
+            <Text style={styles.overlayLabelTextideas}>Ideas</Text>
+          </View>
+          <FlatList
+            ref={flatListRef}
+            data={slides}
+            keyExtractor={(item) => item.id.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item, index }) => (
+              <View style={[styles.carouselItem, { width: carouselItemWidth }]}>
+                <Image source={item.image} style={styles.carouselImage} />
+              </View>
+            )}
+            onScrollToIndexFailed={() => {}}
+            initialScrollIndex={currentSlide}
+          />
+        </View>
         
         <View style={styles.buttonContainer}>
           <Button title="Go to Initial Route" onPress={goToInitialRoute} />
@@ -116,6 +162,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  ideasContainer: {
+    position: 'absolute',
+    top: 200,
+    left: 25, // Position the container on the left side
+    right: 25,
+  },
+  overlayLabelideas: {
+    backgroundColor: '#08A045',
+    borderRadius: 35,
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginRight: 243,
+    marginBottom: 10, // Add margin bottom to separate it from the carousel
+  },
+  overlayLabelTextideas: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+
+   carouselItem: {
+    height: 200, // Adjust the height based on your design
+  },
+
+  carouselImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 10, // Add border radius if needed
+  },
   scrollContainer: {
     flex: 1,
     marginTop: 80,
@@ -133,6 +210,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+ 
+
   image: {
     width: '100%',
     height: '100%',
