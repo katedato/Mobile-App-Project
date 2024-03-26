@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you're using FontAwesome icons
 import * as ImagePicker from 'expo-image-picker';
 
@@ -9,6 +9,10 @@ const AddRecipeScreen = ({ navigation }) => {
   };
 
   const [image, setImage] = useState(null);
+  const [title, setTitle] = useState('');
+  const [preview, setPreview] = useState('');
+  const [procedure, setProcedure] = useState('');
+  const [ingredients, setIngredients] = useState(['']); // Initial ingredients state with one empty string for the input area
 
   const handleAddPhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -29,8 +33,34 @@ const AddRecipeScreen = ({ navigation }) => {
 
     console.log('Image URI:', pickerResult.uri); // Log the image URI
   };
-  
-  
+
+  const handleAddIngredient = () => {
+    setIngredients([...ingredients, '']); // Add a new empty string to the ingredients array
+  };
+
+  const handleRemoveIngredient = (index) => {
+    const newIngredients = [...ingredients];
+    newIngredients.splice(index, 1); // Remove the ingredient at the specified index
+    setIngredients(newIngredients);
+  };
+
+  const handleIngredientChange = (text, index) => {
+    const newIngredients = [...ingredients];
+    newIngredients[index] = text; // Update the ingredient at the specified index
+    setIngredients(newIngredients);
+  };
+
+  const handleTitleChange = (text) => {
+    setTitle(text);
+  };
+
+  const handlePreviewChange = (text) => {
+    setPreview(text);
+  };
+
+  const handleProcedureChange = (text) => {
+    setProcedure(text);
+  };
 
   return (
     <View style={styles.container}>
@@ -62,7 +92,65 @@ const AddRecipeScreen = ({ navigation }) => {
               </>
             )}
           </TouchableOpacity>
-          <Text style={styles.scrollContent}>Scrollable content here...</Text>
+          <View style={styles.inputContainer}>
+            <View style={styles.inputColumn}>
+              <Text style={styles.inputTitle}>Title</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter title"
+                value={title}
+                onChangeText={handleTitleChange}
+              />
+              <Text style={styles.inputTitle}>Preview</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter preview"
+                value={preview}
+                onChangeText={handlePreviewChange}
+              />
+              <Text style={styles.inputTitle}>Procedure</Text>
+              <TextInput
+                style={[styles.input, { height: 110, textAlignVertical: 'top' }]}
+                multiline
+                placeholder="Enter procedure"
+                value={procedure}
+                onChangeText={handleProcedureChange}
+              />
+
+            </View>
+            <View style={styles.inputColumn}>
+              <Text style={styles.inputTitle}>Ingredients</Text>
+              {ingredients.map((ingredient, index) => (
+                <View style={styles.ingredientContainer} key={index}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter ingredient"
+                    value={ingredient}
+                    onChangeText={(text) => handleIngredientChange(text, index)}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.removeIngredientButton,
+                      ingredients.length <= 1 && styles.disabledButton,
+                    ]}
+                    onPress={() => handleRemoveIngredient(index)}
+                    disabled={ingredients.length <= 1}
+                  >
+                    <Icon name="minus" size={20} color="white" />
+                  </TouchableOpacity>
+
+                </View>
+              ))}
+              <TouchableOpacity style={styles.addIngredientButton} onPress={handleAddIngredient}>
+                <Icon name="plus" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.swipeButtonContainer}>
+            <TouchableOpacity style={styles.swipeButton}>
+              <Text style={styles.swipeButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     </View>
@@ -118,7 +206,9 @@ const styles = StyleSheet.create({
     paddingTop: 20, // Add padding to compensate for the negative margin
   },
   scrollViewContent: {
-    margin: 25, // Same margin from all sides
+    marginTop: 5, // Adjust
+    marginLeft: 25, // Same margin from all sides
+    marginRight: 25, // Same margin from all sides
   },
   overlayButton: {
     backgroundColor: '#08A045',
@@ -135,15 +225,80 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5, // Spacing between icon and text
   },
-  scrollContent: {
-    marginTop: 10,
-  },
   addedImage: {
     width: 340,
     height: 150,
     borderRadius: 25,
     marginTop: 10, // Spacing between added image and text
   },
+  inputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  inputColumn: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  inputTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#08A045',
+    borderRadius: 5,
+    padding: 5,
+    marginTop: 5,
+  },
+  addIngredientButton: {
+    backgroundColor: '#08A045',
+    borderRadius: 5,
+    width: 159,
+    height: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  scrollContent: {
+    marginTop: 10,
+  },
+  ingredientContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  removeIngredientButton: {
+    backgroundColor: 'red',
+    borderRadius: 20,
+    width: 35,
+    height: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: 'gray',
+  },
+  swipeButtonContainer: {
+    alignItems: 'center',
+  },
+  swipeButton: {
+    backgroundColor: '#08A045',
+    borderRadius: 25,
+    width: 335,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  swipeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
 });
 
 export default AddRecipeScreen;
