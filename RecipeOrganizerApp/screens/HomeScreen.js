@@ -102,10 +102,18 @@ const HomeScreen = () => {
             initialScrollIndex={currentSlide}
           />
         </View>
-        
-        <View style={styles.buttonContainer}>
-          <Button title="Go to Initial Route" onPress={goToInitialRoute} />
+
+        <View style={styles.aboutContainer}>
+          <View style={styles.overlayLabelabout}>
+            <Text style={styles.overlayLabelTextabout}>About</Text>
+          </View>
+
+          <View style={styles.aboutsection}>
+          <Text style={styles.aboutsectiontext}>The Simple Recipe Organizer app lets you easily save your favorite recipes. It's a convenient tool for managing and organizing recipes.</Text>
+          </View>
         </View>
+
+
       </View>
     </View>
   );
@@ -180,6 +188,39 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  aboutContainer: {
+    position: 'absolute',
+    top: 465,
+    left: 25, // Position the container on the left side
+    right: 25,
+  },
+  overlayLabelabout: {
+    backgroundColor: '#08A045',
+    borderRadius: 35,
+    paddingVertical: 10,
+    paddingHorizontal: 145,
+    marginRight: 0,
+    marginBottom: 10, // Add margin bottom to separate it from the carousel
+  },
+  overlayLabelTextabout: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  aboutsection: {
+    backgroundColor: '#08A045',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginRight: 0,
+    marginBottom: 10, // Add margin bottom to separate it from the carousel
+  },
+  aboutsectiontext: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: 'bold',
+    textAlign: 'center', // Center the text
   },
 
 
