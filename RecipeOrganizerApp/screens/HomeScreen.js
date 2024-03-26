@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createRef } from 'react';
 import { View, Text, StyleSheet, Button, ImageBackground, useWindowDimensions, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+
 import { MaterialIcons } from '@expo/vector-icons';
 import { FlatList } from 'react-native';
 
@@ -21,6 +22,14 @@ const HomeScreen = () => {
     Snack: require('../assets/images/Snack.jpg'),
     Dinner: require('../assets/images/Dinner.jpg'),
     Desserts: require('../assets/images/Desserts.jpg'),
+  };
+  
+  const screenMapping = {
+    Breakfast: 'BreakfastScreen',
+    Lunch: 'LunchScreen',
+    Snack: 'SnacksScreen',
+    Dinner: 'DinnerScreen',
+    Desserts: 'DessertsScreen',
   };
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -68,20 +77,25 @@ const HomeScreen = () => {
           <Text style={styles.overlayLabelText}>Categories</Text>
         </View>
         <ScrollView horizontal={true} style={styles.scrollContainer}>
-          {Object.keys(images).map((key, index) => (
-            <View key={index} style={styles.imageContainer}>
-              <View style={styles.imageWrapper}>
-                <Image
-                  source={images[key]}
-                  style={styles.image}
-                />
-                <View style={styles.overlayImage}>
-                  <Text style={styles.overlayImageText}>{key}</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+  {Object.keys(images).map((key, index) => (
+    <TouchableOpacity
+    key={index}
+    onPress={() => navigation.navigate(screenMapping[key])}
+    style={styles.imageContainer}
+  >
+    <View style={styles.imageWrapper}>
+      <Image
+        source={images[key]}
+        style={styles.image}
+      />
+      <View style={styles.overlayImage}>
+        <Text style={styles.overlayImageText}>{key}</Text>
+      </View>
+    </View>
+  </TouchableOpacity>
+  ))}
+</ScrollView>
+
         <View style={styles.ideasContainer}>
           <View style={styles.overlayLabelideas}>
             <Text style={styles.overlayLabelTextideas}>Ideas</Text>
