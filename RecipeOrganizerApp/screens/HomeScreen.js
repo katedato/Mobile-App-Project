@@ -77,24 +77,24 @@ const HomeScreen = () => {
           <Text style={styles.overlayLabelText}>Categories</Text>
         </View>
         <ScrollView horizontal={true} style={styles.scrollContainer}>
-  {Object.keys(images).map((key, index) => (
-    <TouchableOpacity
-    key={index}
-    onPress={() => navigation.navigate(screenMapping[key])}
-    style={styles.imageContainer}
-  >
-    <View style={styles.imageWrapper}>
-      <Image
-        source={images[key]}
-        style={styles.image}
-      />
-      <View style={styles.overlayImage}>
-        <Text style={styles.overlayImageText}>{key}</Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-  ))}
-</ScrollView>
+          {Object.keys(images).map((key, index) => (
+            <TouchableOpacity
+            key={index}
+            onPress={() => navigation.navigate(screenMapping[key])}
+            style={styles.imageContainer}
+          >
+            <View style={styles.imageWrapper}>
+              <Image
+                source={images[key]}
+                style={styles.image}
+              />
+              <View style={styles.overlayImage}>
+                <Text style={styles.overlayImageText}>{key}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         <View style={styles.ideasContainer}>
           <View style={styles.overlayLabelideas}>
