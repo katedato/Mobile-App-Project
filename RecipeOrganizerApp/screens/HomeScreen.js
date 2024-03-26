@@ -56,6 +56,7 @@ const HomeScreen = () => {
             </View>
           ))}
         </ScrollView>
+        
         <View style={styles.buttonContainer}>
           <Button title="Go to Initial Route" onPress={goToInitialRoute} />
         </View>
