@@ -37,7 +37,7 @@ const LunchScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
           <View style={styles.imageContainer}>
           {images.map((image) => (
-            <TouchableOpacity key={image.id} style={styles.imageItem}>
+            <TouchableOpacity key={image.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe')}>
               <View style={styles.imageWrapper}>
                 <ImageBackground source={{ uri: image.uri }} style={styles.image}>
                   <View style={styles.overlayImage}>
