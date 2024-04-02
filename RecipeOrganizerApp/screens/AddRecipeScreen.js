@@ -1,18 +1,121 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you're using FontAwesome icons
 import * as ImagePicker from 'expo-image-picker';
+import * as SQLite from 'expo-sqlite';
+import { Picker as CustomPicker } from '@react-native-picker/picker'; // Rename Picker to CustomPicker
+
+const db = SQLite.openDatabase('new_recipes.db');
+
+// Check if the table exists, if not, create it
+db.transaction(tx => {
+  tx.executeSql(
+    'CREATE TABLE IF NOT EXISTS recipes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, preview TEXT, procedure TEXT, ingredients TEXT, image TEXT, category TEXT);',
+    [],
+    (_, result) => {
+      console.log('Table created successfully');
+    },
+    (_, error) => {
+      console.error('Error creating table:', error);
+    }
+  );
+});
 
 const AddRecipeScreen = ({ navigation }) => {
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   const [image, setImage] = useState(null);
   const [title, setTitle] = useState('');
   const [preview, setPreview] = useState('');
   const [procedure, setProcedure] = useState('');
   const [ingredients, setIngredients] = useState(['']); // Initial ingredients state with one empty string for the input area
+  const [titleError, setTitleError] = useState('');
+  const [previewError, setPreviewError] = useState('');
+  const [procedureError, setProcedureError] = useState('');
+  const [ingredientsError, setIngredientsError] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [category, setCategory] = useState(''); // State to hold the selected category
+  const [categoryError, setCategoryError] = useState(''); // State to hold the category error message
+
+  useEffect(() => {
+    // Create the 'recipes' table if it doesn't exist
+    db.transaction(tx => {
+      tx.executeSql(
+        'CREATE TABLE IF NOT EXISTS recipes (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, preview TEXT, procedure TEXT, ingredients TEXT, image TEXT, category TEXT);',
+        [],
+        (_, result) => {
+          console.log('Table created successfully');
+        },
+        (_, error) => {
+          console.error('Error creating table:', error);
+        }
+      );
+    });
+  }, []);
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const handleSaveRecipe = () => {
+    setTitleError('');
+    setPreviewError('');
+    setProcedureError('');
+    setIngredientsError('');
+    setImageError('');
+    setCategoryError(''); // Add this line to reset the category error
+  
+    if (!title) {
+      setTitleError('Please input title');
+    }
+    if (!preview) {
+      setPreviewError('Please input preview');
+    }
+    if (!procedure) {
+      setProcedureError('Please input procedure');
+    }
+    if (ingredients.some((ingredient) => !ingredient)) {
+      setIngredientsError('Please input ingredients');
+    }
+    if (!image) {
+      setImageError('Please add a photo');
+      return;
+    }
+    if (!category) {
+      setCategoryError('Please choose a category'); // Set the category error message
+      return;
+    }
+  
+    db.transaction(
+      (tx) => {
+        tx.executeSql(
+          'INSERT INTO recipes (title, preview, procedure, ingredients, image, category) VALUES (?, ?, ?, ?, ?, ?)',
+          [title, preview, procedure, JSON.stringify(ingredients), image, category],
+          (_, { rowsAffected, insertId }) => {
+            if (rowsAffected > 0) {
+              console.log(`Recipe with ID ${insertId} saved successfully`);
+              Alert.alert('Recipe saved successfully');
+              navigation.goBack();
+            } else {
+              Alert.alert('Failed to save recipe');
+            }
+          },
+          (_, error) => {
+            console.error('SQLite error:', error);
+            Alert.alert('Failed to save recipe');
+          }
+        );
+      },
+      null,
+      () => {
+        setTitle('');
+        setPreview('');
+        setProcedure('');
+        setIngredients(['']);
+        setImage(null);
+        setCategory('');
+      }
+    );
+  };
+  
 
   const handleAddPhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -23,16 +126,20 @@ const AddRecipeScreen = ({ navigation }) => {
     }
   
     const pickerResult = await ImagePicker.launchImageLibraryAsync();
+  
     console.log('Picker Result:', pickerResult); // Log the picker result
   
     if (pickerResult.cancelled === true) {
       return;
     }
   
-    setImage(pickerResult.assets[0].uri);
-
-    console.log('Image URI:', pickerResult.uri); // Log the image URI
+    if (pickerResult.assets.length > 0) {
+      setImage(pickerResult.assets[0].uri);
+      console.log('Image URI:', pickerResult.assets[0].uri); // Log the image URI
+    }
   };
+  
+  
 
   const handleAddIngredient = () => {
     setIngredients([...ingredients, '']); // Add a new empty string to the ingredients array
@@ -83,15 +190,17 @@ const AddRecipeScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           <TouchableOpacity style={styles.overlayButton} onPress={handleAddPhoto}>
-            {image ? (
-              <Image source={{ uri: image }} style={styles.addedImage} />
-            ) : (
-              <>
-                <Icon name="plus" size={20} color="white" />
-                <Text style={styles.addPhotoText}>Add Photo</Text>
-              </>
-            )}
-          </TouchableOpacity>
+  {image ? (
+    <Image source={{ uri: image }} style={styles.addedImage} />
+  ) : (
+    <>
+      <Icon name="plus" size={20} color="white" />
+      <Text style={styles.addPhotoText}>Add Photo</Text>
+    </>
+  )}
+</TouchableOpacity>
+
+          {imageError ? <Text style={styles.errorMessage}>{imageError}</Text> : null}
           <View style={styles.inputContainer}>
             <View style={styles.inputColumn}>
               <Text style={styles.inputTitle}>Title</Text>
@@ -101,6 +210,8 @@ const AddRecipeScreen = ({ navigation }) => {
                 value={title}
                 onChangeText={handleTitleChange}
               />
+              {titleError ? <Text style={styles.errorMessage}>{titleError}</Text> : null}
+
               <Text style={styles.inputTitle}>Preview</Text>
               <TextInput
                 style={styles.input}
@@ -108,6 +219,8 @@ const AddRecipeScreen = ({ navigation }) => {
                 value={preview}
                 onChangeText={handlePreviewChange}
               />
+              {previewError ? <Text style={styles.errorMessage}>{previewError}</Text> : null}
+
               <Text style={styles.inputTitle}>Procedure</Text>
               <TextInput
                 style={[styles.input, { height: 110, textAlignVertical: 'top' }]}
@@ -116,9 +229,28 @@ const AddRecipeScreen = ({ navigation }) => {
                 value={procedure}
                 onChangeText={handleProcedureChange}
               />
+              {procedureError ? <Text style={styles.errorMessage}>{procedureError}</Text> : null}
 
             </View>
+
             <View style={styles.inputColumn}>
+            <Text style={styles.inputTitle}>Category</Text>
+              <CustomPicker
+                selectedValue={category}
+                onValueChange={(itemValue, itemIndex) => setCategory(itemValue)}
+                style={[styles.input, styles.picker]}
+              >
+                <CustomPicker.Item label="Choose Category" value="" />
+                <CustomPicker.Item label="Breakfast" value="Breakfast" />
+                <CustomPicker.Item label="Lunch" value="Lunch" />
+                <CustomPicker.Item label="Snacks" value="Snacks" />
+                <CustomPicker.Item label="Dinner" value="Dinner" />
+                <CustomPicker.Item label="Dessert" value="Dessert" />
+              </CustomPicker>
+              <View style={styles.errorContainer}>
+                {categoryError ? <Text style={styles.errorMessage}>{categoryError}</Text> : null}
+              </View>
+
               <Text style={styles.inputTitle}>Ingredients</Text>
               {ingredients.map((ingredient, index) => (
                 <View style={styles.ingredientContainer} key={index}>
@@ -138,16 +270,16 @@ const AddRecipeScreen = ({ navigation }) => {
                   >
                     <Icon name="minus" size={20} color="white" />
                   </TouchableOpacity>
-
                 </View>
               ))}
+              {ingredientsError ? <Text style={styles.errorMessage}>{ingredientsError}</Text> : null}
               <TouchableOpacity style={styles.addIngredientButton} onPress={handleAddIngredient}>
                 <Icon name="plus" size={20} color="white" />
               </TouchableOpacity>
             </View>
           </View>
           <View style={styles.swipeButtonContainer}>
-            <TouchableOpacity style={styles.swipeButton}>
+            <TouchableOpacity style={styles.swipeButton} onPress={handleSaveRecipe}>
               <Text style={styles.swipeButtonText}>Submit</Text>
             </TouchableOpacity>
           </View>
@@ -298,7 +430,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  
+  errorMessage: {
+    color: 'red',
+    marginTop: 5,
+  },
+  picker: {
+    borderWidth: 1,
+    borderColor: '#08A045',
+    borderRadius: 5,
+    marginTop: 5,
+  }
 });
 
 export default AddRecipeScreen;

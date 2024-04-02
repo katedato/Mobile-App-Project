@@ -1,22 +1,35 @@
-import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Import the Icon component
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Image } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import * as SQLite from 'expo-sqlite';
+
+const db = SQLite.openDatabase('new_recipes.db');
 
 const LunchScreen = () => {
   const navigation = useNavigation();
+  const [recipes, setRecipes] = useState([]);
 
-  // Sample data for images
-  const images = [
-    { id: 1, title: '"Recipe Title 1"', uri: 'https://via.placeholder.com/150', },
-    { id: 2, title: '"Recipe Title 2"', uri: 'https://via.placeholder.com/150', },
-    { id: 3, title: '"Recipe Title 3"', uri: 'https://via.placeholder.com/150', },
-    { id: 4, title: '"Recipe Title 4"', uri: 'https://via.placeholder.com/150', },
-    { id: 5, title: '"Recipe Title 5"', uri: 'https://via.placeholder.com/150', },
-    { id: 6, title: '"Recipe Title 6"', uri: 'https://via.placeholder.com/150', },
-    { id: 7, title: '"Recipe Title 7"', uri: 'https://via.placeholder.com/150', },
-    { id: 8, title: '"Recipe Title 8"', uri: 'https://via.placeholder.com/150', },
-  ];
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'SELECT * FROM recipes WHERE category = ?',
+          ['Lunch'],
+          (_, { rows }) => {
+            const recipesData = rows._array;
+            setRecipes(recipesData);
+            console.log('Recipes fetched successfully:', recipesData);
+          },
+          (_, error) => {
+            console.error('SQLite error:', error);
+          }
+        );
+      });
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -36,18 +49,17 @@ const LunchScreen = () => {
       <View style={styles.bottomSection}>
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
           <View style={styles.imageContainer}>
-          {images.map((image) => (
-            <TouchableOpacity key={image.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe')}>
-              <View style={styles.imageWrapper}>
-                <ImageBackground source={{ uri: image.uri }} style={styles.image}>
-                  <View style={styles.overlayImage}>
-                    <Text style={styles.overlayImageText}>{image.title}</Text>
-                  </View>
-                </ImageBackground>
-              </View>
-            </TouchableOpacity>
-          ))}
-
+            {recipes.map((recipe) => (
+              <TouchableOpacity key={recipe.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe')}>
+                <View style={styles.imageWrapper}>
+                  <ImageBackground source={{ uri: recipe.image }} style={styles.image}>
+                    <View style={styles.overlayImage}>
+                      <Text style={styles.overlayImageText}>{recipe.title}</Text>
+                    </View>
+                  </ImageBackground>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         </ScrollView>
       </View>
@@ -66,7 +78,7 @@ const styles = StyleSheet.create({
     flex: 1,
     resizeMode: 'cover',
     justifyContent: 'center',
-    position: 'relative', // Ensure the button is positioned relative to the image
+    position: 'relative',
   },
   backButton: {
     position: 'absolute',
@@ -99,8 +111,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingTop: 20,
     paddingHorizontal: 25,
-    marginTop: -20, // Adjust this value to control the overlap
-    paddingTop: 20, // Add padding to compensate for the negative margin
+    marginTop: -20,
+    paddingTop: 20,
   },
   scrollViewContent: {
     flexDirection: 'row',
@@ -115,7 +127,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   imageItem: {
-    width: '48%', // Two columns layout
+    width: '100%',
     marginBottom: 20,
   },
   imageWrapper: {
