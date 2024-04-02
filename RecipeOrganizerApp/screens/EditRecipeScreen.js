@@ -1,338 +1,133 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you're using FontAwesome icons
-import * as ImagePicker from 'expo-image-picker';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, ImageBackground, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import * as SQLite from 'expo-sqlite';
+import { MaterialIcons } from '@expo/vector-icons';
 
-const EditRecipeScreen = ({ navigation }) => {
-  const handleBack = () => {
-    navigation.goBack();
-  };
+const db = SQLite.openDatabase('new_recipes.db');
 
-  const [image, setImage] = useState(null);
+const EditRecipeScreen = ({ route, navigation }) => {
+  const { recipeId } = route.params;
   const [title, setTitle] = useState('');
   const [preview, setPreview] = useState('');
   const [procedure, setProcedure] = useState('');
-  const [ingredients, setIngredients] = useState(['']); // Initial ingredients state with one empty string for the input area
+  const [ingredients, setIngredients] = useState('');
+  const [image, setImage] = useState('');
 
-  const handleAddPhoto = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission to access camera roll is required!');
-      return;
-    }
-  
-    const pickerResult = await ImagePicker.launchImageLibraryAsync();
-    console.log('Picker Result:', pickerResult); // Log the picker result
-  
-    if (pickerResult.cancelled === true) {
-      return;
-    }
-  
-    setImage(pickerResult.assets[0].uri);
+  useEffect(() => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM recipes WHERE id = ?',
+        [recipeId],
+        (_, { rows }) => {
+          const recipeData = rows.item(0);
+          setTitle(recipeData.title);
+          setPreview(recipeData.preview);
+          setProcedure(recipeData.procedure);
+          setIngredients(recipeData.ingredients);
+          setImage(recipeData.image);
+        },
+        (_, error) => {
+          console.error('SQLite error:', error);
+        }
+      );
+    });
+  }, [recipeId]);
 
-    console.log('Image URI:', pickerResult.uri); // Log the image URI
-  };
-
-  const handleAddIngredient = () => {
-    setIngredients([...ingredients, '']); // Add a new empty string to the ingredients array
-  };
-
-  const handleRemoveIngredient = (index) => {
-    const newIngredients = [...ingredients];
-    newIngredients.splice(index, 1); // Remove the ingredient at the specified index
-    setIngredients(newIngredients);
-  };
-
-  const handleIngredientChange = (text, index) => {
-    const newIngredients = [...ingredients];
-    newIngredients[index] = text; // Update the ingredient at the specified index
-    setIngredients(newIngredients);
-  };
-
-  const handleTitleChange = (text) => {
-    setTitle(text);
-  };
-
-  const handlePreviewChange = (text) => {
-    setPreview(text);
-  };
-
-  const handleProcedureChange = (text) => {
-    setProcedure(text);
+  const updateRecipe = () => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'UPDATE recipes SET title = ?, preview = ?, procedure = ?, ingredients = ?, image = ? WHERE id = ?',
+        [title, preview, procedure, ingredients, image, recipeId],
+        () => {
+          console.log('Recipe updated successfully');
+          navigation.goBack();
+        },
+        (_, error) => {
+          console.error('SQLite error:', error);
+        }
+      );
+    });
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topSection}>
-      <ImageBackground
-        source={require('../assets/images/AddrecipeBG.jpg')}
-        style={styles.backgroundImage}
-      >
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => {
-            // Add functionality to delete the recipe
-            // For example, you can show an alert or confirmation modal
-            Alert.alert('Delete', 'Are you sure you want to delete this recipe?', [
-              {
-                text: 'Cancel',
-                style: 'cancel',
-              },
-              {
-                text: 'Delete',
-                onPress: () => {
-                  // Implement the delete logic here
-                },
-                style: 'destructive',
-              },
-            ]);
-          }}
+    <View style={{ flex: 1 }}>
+      <View style={styles.backgroundContainer}>
+        <ImageBackground
+          source={require('../assets/images/AddrecipeBG.jpg')}
+          style={styles.backgroundImage}
+          resizeMode="cover"
         >
-          <Icon name="trash" size={20} color="white" />
-        </TouchableOpacity>
-        <View style={styles.overlay}>
-          <Text style={styles.overlayText}>Edit Recipe</Text>
-        </View>
-        <TouchableOpacity style={styles.addButton} onPress={handleBack}>
-          <Icon name="times" size={20} color="white" />
-        </TouchableOpacity>
-      </ImageBackground>
-
-      </View>
-      <View style={styles.bottomSection}>
-        <ScrollView
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <TouchableOpacity style={styles.overlayButton} onPress={handleAddPhoto}>
-            {image ? (
-              <Image source={{ uri: image }} style={styles.addedImage} />
-            ) : (
-              <>
-                <Icon name="plus" size={20} color="white" />
-                <Text style={styles.addPhotoText}>Change Photo</Text>
-              </>
-            )}
+          <View style={styles.overlay}>
+            <Text style={styles.overlayText}>Edit Recipe</Text>
+          </View>
+          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+            <MaterialIcons name="cancel" size={24} color="white" />
           </TouchableOpacity>
-          <View style={styles.inputContainer}>
-            <View style={styles.inputColumn}>
-              <Text style={styles.inputTitle}>Title</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter title"
-                value={title}
-                onChangeText={handleTitleChange}
-              />
-              <Text style={styles.inputTitle}>Preview</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter preview"
-                value={preview}
-                onChangeText={handlePreviewChange}
-              />
-              <Text style={styles.inputTitle}>Procedure</Text>
-              <TextInput
-                style={[styles.input, { height: 110, textAlignVertical: 'top' }]}
-                multiline
-                placeholder="Enter procedure"
-                value={procedure}
-                onChangeText={handleProcedureChange}
-              />
-
-            </View>
-            <View style={styles.inputColumn}>
-              <Text style={styles.inputTitle}>Ingredients</Text>
-              {ingredients.map((ingredient, index) => (
-                <View style={styles.ingredientContainer} key={index}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Enter ingredient"
-                    value={ingredient}
-                    onChangeText={(text) => handleIngredientChange(text, index)}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.removeIngredientButton,
-                      ingredients.length <= 1 && styles.disabledButton,
-                    ]}
-                    onPress={() => handleRemoveIngredient(index)}
-                    disabled={ingredients.length <= 1}
-                  >
-                    <Icon name="minus" size={20} color="white" />
-                  </TouchableOpacity>
-
-                </View>
-              ))}
-              <TouchableOpacity style={styles.addIngredientButton} onPress={handleAddIngredient}>
-                <Icon name="plus" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.swipeButtonContainer}>
-            <TouchableOpacity style={styles.swipeButton}>
-              <Text style={styles.swipeButtonText}>Update</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+        </ImageBackground>
       </View>
+      <ScrollView style={styles.container}>
+        <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Title" />
+        <TextInput style={styles.input} value={preview} onChangeText={setPreview} placeholder="Preview" />
+        <TextInput style={styles.input} value={procedure} onChangeText={setProcedure} placeholder="Procedure" />
+        <TextInput style={styles.input} value={ingredients} onChangeText={setIngredients} placeholder="Ingredients" />
+        <TextInput style={styles.input} value={image} onChangeText={setImage} placeholder="Image URL" />
+        <Button title="Update Recipe" onPress={updateRecipe} />
+      </ScrollView>
     </View>
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  topSection: {
-    flex: 0.3, // 30% of the screen height
+  backgroundContainer: {
+    flex: 0.43,
+    backgroundColor: 'black',
   },
   backgroundImage: {
     flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
+    height: '100%',
+    position: 'relative',
   },
   overlay: {
     position: 'absolute',
-    bottom: 45,
+    borderTopRightRadius: 25,
+    borderBottomRightRadius: 25,
+    width: '45%',
+    bottom: 43,
     left: 0,
+    right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: 10,
-    paddingHorizontal: 35,
-    borderTopRightRadius: 35,
-    borderBottomRightRadius: 35,
-    overflow: 'hidden',
+    padding: 10,
+    alignItems: 'center',
   },
   overlayText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
   },
-  addButton: {
+  cancelButton: {
     position: 'absolute',
-    bottom: 45,
-    right: 25,
+    bottom: 40,
+    right: 23,
     backgroundColor: 'red',
-    borderRadius: 50,
-    width: 35,
-    height: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 10,
+    borderRadius: 35,
   },
-  bottomSection: {
-    flex: 0.7, // 70% of the screen height
+  container: {
+    flex: 0.57,
     backgroundColor: 'white',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    marginTop: -20, // Adjust this value to control the overlap
-    paddingTop: 20, // Add padding to compensate for the negative margin
-  },
-  scrollViewContent: {
-    marginTop: 5, // Adjust
-    marginLeft: 25, // Same margin from all sides
-    marginRight: 25, // Same margin from all sides
-  },
-  overlayButton: {
-    backgroundColor: '#08A045',
-    borderRadius: 25,
-    width: 340,
-    height: 150,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 25, // Margin at the bottom
-  },
-  addPhotoText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5, // Spacing between icon and text
-  },
-  addedImage: {
-    width: 340,
-    height: 150,
-    borderRadius: 25,
-    marginTop: 10, // Spacing between added image and text
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  inputColumn: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  inputTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    marginTop: -20,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#08A045',
-    borderRadius: 5,
+    borderBottomWidth: 1,
+    borderColor: 'gray',
+    marginBottom: 10,
     padding: 5,
-    marginTop: 5,
   },
-  addIngredientButton: {
-    backgroundColor: '#08A045',
-    borderRadius: 5,
-    width: 159,
-    height: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 5,
-  },
-  scrollContent: {
-    marginTop: 10,
-  },
-  ingredientContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  removeIngredientButton: {
-    backgroundColor: 'red',
-    borderRadius: 20,
-    width: 35,
-    height: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: 'gray',
-  },
-  swipeButtonContainer: {
-    alignItems: 'center',
-  },
-  swipeButton: {
-    backgroundColor: '#08A045',
-    borderRadius: 25,
-    width: 335,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  swipeButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  deleteButton: {
-    position: 'absolute',
-    top: 50,
-    left: 30,
-    backgroundColor: 'red',
-    borderRadius: 50,
-    width: 35,
-    height: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
 });
 
 export default EditRecipeScreen;

@@ -1,47 +1,82 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome'; 
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as SQLite from 'expo-sqlite';
+import { Feather } from '@expo/vector-icons'; // Import Feather icons from expo
 
-const RecipeScreen = () => {
-  const navigation = useNavigation();
+const db = SQLite.openDatabase('new_recipes.db');
+
+const RecipeScreen = ({ route }) => {
+  const navigation = useNavigation(); // Get navigation object
+  const { recipeId } = route.params;
+  const [recipe, setRecipe] = React.useState(null);
+
+  React.useEffect(() => {
+    console.log('Recipe ID:', recipeId); // Debug output
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT * FROM recipes WHERE id = ?',
+        [recipeId],
+        (_, { rows }) => {
+          const recipeData = rows.item(0); // Assuming id is unique, so we only take the first result
+          console.log('Recipe Data:', recipeData); // Debug output
+          setRecipe(recipeData);
+        },
+        (_, error) => {
+          console.error('SQLite error:', error);
+        }
+      );
+    });
+  }, [recipeId]);
+
+  if (!recipe) {
+    return <Text>Loading...</Text>;
+  }
 
   return (
     <View style={styles.container}>
       <View style={styles.topSection}>
-        <View style={styles.greyBackground}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="arrow-left" size={20} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditRecipe')}>
-            <Icon name="edit" size={20} color="white" />
-          </TouchableOpacity>
-          <View style={styles.overlay}>
-            <Text style={styles.overlayText}>(Fetch Title)</Text>
-          </View>
-          <Text style={styles.greyText}>(Fetch Recipe Image Here)</Text>
+        <Image source={{ uri: recipe.image }} style={styles.image} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Feather name="arrow-left" size={24} color="white" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditRecipe', { recipeId: recipeId })}
+        >
+          <Feather name="edit" size={24} color="white" />
+        </TouchableOpacity>
+
+        <View style={styles.overlay}>
+          <Text style={styles.overlayText}>{recipe.title}</Text>
         </View>
       </View>
-      <View style={styles.bottomSection}>
-        <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.previewOverlay}>
-            <Text style={styles.overlayText}>(Fetch Preview data here)</Text>
+      <View style={styles.bottomSectionOverlay}>
+        <ScrollView style={styles.bottomSection}>
+          <View style={styles.previewSection}>
+            <Text style={styles.previewText}>{recipe.preview}</Text>
           </View>
-          <View style={styles.ingredientsOverlay}>
-            <Text style={styles.overlayText}>Ingredients</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ingredients:</Text>
+            <ScrollView horizontal={true} style={styles.scrollContainer}>
+              {recipe.ingredients.split(',').map((ingredient, index) => (
+                <View key={index} style={styles.imageContainer}>
+                  <Text style={styles.imageText}>{ingredient.replace(/^[^a-zA-Z0-9]*|[^a-zA-Z0-9]*$/g, '')}</Text>
+                </View>
+              ))}
+            </ScrollView>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScrollView}>
-            {[1, 2, 3, 4, 5].map((index) => (
-              <View key={index} style={styles.greyBackgroundSquare}>
-                <Text style={styles.greyBackgroundText}>Fetch Ingredients here</Text>
+          <View style={styles.procedureStep}>
+            <Text style={styles.sectionTitleProcedure}>Procedure</Text>
+            {recipe.procedure.split(',').map((step, index) => (
+              <View key={index} style={styles.procedureStep}>
+                <Text style={styles.text}>{index + 1}. {step}</Text>
               </View>
             ))}
-          </ScrollView>
-          <View style={styles.additionalSection}>
-            <Text style={styles.additionalSectionText}>(Fetch Procedure here)</Text>
           </View>
         </ScrollView>
       </View>
+
     </View>
   );
 };
@@ -49,114 +84,130 @@ const RecipeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: 'column',
+    backgroundColor: 'white',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
   },
   topSection: {
-    flex: 0.3,
-  },
-  greyBackground: {
-    backgroundColor: 'grey',
-    flex: 1,
-    justifyContent: 'center',
+    flex: 0.45,
     alignItems: 'center',
-    position: 'relative', 
-  },
-  backButton: {
-    position: 'absolute',
-    top: 50,
-    left: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 20,
-    padding: 10,
-  },
-  editButton: {
-    position: 'absolute',
-    top: 50,
-    right: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 20,
-    padding: 10,
+    position: 'relative',
   },
   overlay: {
+    width: '40%',
     position: 'absolute',
-    bottom: 45,
-    right: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     paddingVertical: 10,
-    paddingHorizontal: 35,
+    paddingHorizontal: 30,
     borderTopLeftRadius: 35,
     borderBottomLeftRadius: 35,
-    overflow: 'hidden',
+    top: '50%',
+    right: 0,
+    transform: [{ translateY: -25 }],
   },
   overlayText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  greyText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  bottomSection: {
-    flex: 0.7,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    backgroundColor: 'white',
-    paddingTop: 20,
-    paddingHorizontal: 25,
-    marginTop: -20, 
-    paddingTop: 20, 
-  },
-  scrollViewContent: {
-    margin: 5,
-    paddingBottom: 20, 
-  },
-  previewOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 40,
-    height: 100,
-    width: '100%',
-    marginBottom: 10,
-  },
-  ingredientsOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingVertical: 10,
-    paddingHorizontal: 125,
-    borderRadius: 30,
-    marginBottom: 10,
-  },
-  horizontalScrollView: {
-    marginHorizontal: -4,
-  },
-  greyBackgroundSquare: {
-    backgroundColor: 'grey',
-    width: 120,
-    height: 120,
-    borderRadius: 30,
-    marginHorizontal: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  greyBackgroundText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
     textAlign: 'center',
   },
-  additionalSection: {
-    backgroundColor: '#08A045',
+  backButton: {
+    position: 'absolute',
+    top: 45,
+    left: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 25,
+    padding: 10,
+  },
+  editButton: {
+    position: 'absolute',
+    top: 45,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 25,
+    padding: 10,
+  },
+  bottomSectionOverlay: {
+    position: 'absolute',
+    height: '100%',
+    top: 240,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    zIndex: 1,
+  },
+  bottomSection: {
+    flex: 1,
     padding: 20,
-    height: 500,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    marginBottom: 20,
+    borderRadius: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginTop: 20,
     marginBottom: 10,
   },
-  additionalSectionText: {
-    color: 'white',
-    fontSize: 16,
+  sectionTitleProcedure: {
+    fontSize: 20,
     fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
     textAlign: 'center',
-    
+    color: 'white',
   },
+  text: {
+    fontSize: 16,
+    marginBottom: 10,
+    color: 'white',
+  },
+  previewSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'lightgray',
+    paddingBottom: 10,
+  },
+  previewText: {
+    fontSize: 16,
+    textAlign: 'left',
+  },
+  section: {
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  scrollContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  imageContainer: {
+    backgroundColor: '#08A045',
+    width: 150,
+    height: 150,
+    marginRight: 10,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: 'white',
+  },
+  procedureStep: {
+    backgroundColor: '#08A045',
+    padding: 10,
+    marginBottom: 200,
+    maxWidth: '100%', // Set the maximum width of the box
+  },
+  
+  
 });
 
 export default RecipeScreen;

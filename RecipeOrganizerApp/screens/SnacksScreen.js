@@ -50,8 +50,8 @@ const SnacksScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
           <View style={styles.imageContainer}>
             {recipes.map((recipe) => (
-              <TouchableOpacity key={recipe.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe')}>
-                <View style={styles.imageWrapper}>
+              <TouchableOpacity key={recipe.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe', { recipeId: recipe.id })}>
+              <View style={styles.imageWrapper}>
                   <ImageBackground source={{ uri: recipe.image }} style={styles.image}>
                     <View style={styles.overlayImage}>
                       <Text style={styles.overlayImageText}>{recipe.title}</Text>
