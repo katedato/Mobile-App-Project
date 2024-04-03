@@ -1,16 +1,21 @@
 {
   "expo": {
-    "name": "RecipeOrganizerApp",
+    "name": "Dish Diary",
     "slug": "RecipeOrganizerApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "permissions": [
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,12 +24,18 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.tokyorevengersdevs.RecipeOrganizerApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6d0a6ee2-abb5-478b-871c-8fab8f2bb1ee"
+      }
     }
   }
 }
