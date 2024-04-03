@@ -48,19 +48,23 @@ const LunchScreen = () => {
       </View>
       <View style={styles.bottomSection}>
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.imageContainer}>
-            {recipes.map((recipe) => (
-              <TouchableOpacity key={recipe.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe', { recipeId: recipe.id })}>
-              <View style={styles.imageWrapper}>
-                  <ImageBackground source={{ uri: recipe.image }} style={styles.image}>
-                    <View style={styles.overlayImage}>
-                      <Text style={styles.overlayImageText}>{recipe.title}</Text>
-                    </View>
-                  </ImageBackground>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {recipes.length === 0 ? (
+            <Text style={styles.noRecipeText}>No Recipe Yet</Text>
+          ) : (
+            <View style={styles.imageContainer}>
+              {recipes.map((recipe) => (
+                <TouchableOpacity key={recipe.id} style={styles.imageItem} onPress={() => navigation.navigate('Recipe', { recipeId: recipe.id })}>
+                <View style={styles.imageWrapper}>
+                    <ImageBackground source={{ uri: recipe.image }} style={styles.image}>
+                      <View style={styles.overlayImage}>
+                        <Text style={styles.overlayImageText}>{recipe.title}</Text>
+                      </View>
+                    </ImageBackground>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
     </View>
@@ -157,6 +161,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  noRecipeText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    paddingVertical: 200,
+    paddingHorizontal: 114,
   },
 });
 

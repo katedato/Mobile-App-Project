@@ -11,9 +11,13 @@ const EditRecipeScreen = ({ route, navigation }) => {
   const [title, setTitle] = useState('');
   const [preview, setPreview] = useState('');
   const [procedure, setProcedure] = useState('');
-  const [ingredients, setIngredients] = useState('');
+  const [ingredients, setIngredients] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [image, setImage] = useState('');
+  const [titleError, setTitleError] = useState('');
+  const [previewError, setPreviewError] = useState('');
+  const [procedureError, setProcedureError] = useState('');
+  const [ingredientsError, setIngredientsError] = useState('');
 
   useEffect(() => {
     db.transaction((tx) => {
@@ -25,7 +29,7 @@ const EditRecipeScreen = ({ route, navigation }) => {
           setTitle(recipeData.title);
           setPreview(recipeData.preview);
           setProcedure(recipeData.procedure);
-          setIngredients(recipeData.ingredients);
+          setIngredients(JSON.parse(recipeData.ingredients));
           setImage(recipeData.image);
           setSelectedImage(recipeData.image); // Set the selected image URI for preview
         },
@@ -40,14 +44,39 @@ const EditRecipeScreen = ({ route, navigation }) => {
   }, [recipeId]);
 
   const updateRecipe = () => {
+    if (!title.trim()) {
+      setTitleError('Title is required');
+      return;
+    }
+    setTitleError('');
+
+    if (!preview.trim()) {
+      setPreviewError('Preview is required');
+      return;
+    }
+    setPreviewError('');
+
+    if (!procedure.trim()) {
+      setProcedureError('Procedure is required');
+      return;
+    }
+    setProcedureError('');
+
+    if (ingredients.some((ingredient) => !ingredient.trim())) {
+      setIngredientsError('All ingredients must be filled');
+      return;
+    }
+    setIngredientsError('');
+
+    // Continue with update logic
     db.transaction((tx) => {
       tx.executeSql(
         'UPDATE recipes SET title = ?, preview = ?, procedure = ?, ingredients = ?, image = ? WHERE id = ?',
-        [title, preview, procedure, ingredients, selectedImage, recipeId], // Use selectedImage instead of image
+        [title, preview, procedure, JSON.stringify(ingredients), selectedImage, recipeId],
         () => {
           console.log('Recipe updated successfully');
-          navigation.goBack(); // Go back to the previous screen
-          navigation.goBack(); // Go back to the 2nd previous screen
+          navigation.goBack();
+          navigation.goBack();
         },
         (_, error) => {
           console.error('SQLite error:', error);
@@ -55,7 +84,23 @@ const EditRecipeScreen = ({ route, navigation }) => {
       );
     });
   };
-  
+
+  const deleteRecipe = () => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'DELETE FROM recipes WHERE id = ?',
+        [recipeId],
+        () => {
+          console.log('Recipe deleted successfully');
+          navigation.goBack();
+          navigation.goBack();
+        },
+        (_, error) => {
+          console.error('SQLite error:', error);
+        }
+      );
+    });
+  };
 
   const handleAddPhoto = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -79,6 +124,22 @@ const EditRecipeScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleAddIngredient = () => {
+    setIngredients([...ingredients, '']);
+  };
+
+  const handleIngredientChange = (index, value) => {
+    const newIngredients = [...ingredients];
+    newIngredients[index] = value;
+    setIngredients(newIngredients);
+  };
+
+  const handleRemoveIngredient = (index) => {
+    const newIngredients = [...ingredients];
+    newIngredients.splice(index, 1);
+    setIngredients(newIngredients);
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.backgroundContainer}>
@@ -93,6 +154,9 @@ const EditRecipeScreen = ({ route, navigation }) => {
           <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
             <MaterialIcons name="cancel" size={24} color="white" />
           </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={deleteRecipe}>
+            <MaterialIcons name="delete" size={24} color="white" />
+          </TouchableOpacity>
         </ImageBackground>
       </View>
       <ScrollView style={styles.container}>
@@ -106,15 +170,51 @@ const EditRecipeScreen = ({ route, navigation }) => {
             </View>
           )}
         </TouchableOpacity>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recipe Details</Text>
-          <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Title" />
-          <TextInput style={styles.input} value={preview} onChangeText={setPreview} placeholder="Preview" />
-          <TextInput style={styles.input} value={procedure} onChangeText={setProcedure} placeholder="Procedure" />
-          <TextInput style={styles.input} value={ingredients} onChangeText={setIngredients} placeholder="Ingredients" />
+        <View style={styles.columnsContainer}>
+          <View style={styles.leftColumn}>
+            <Text style={styles.sectionTitle}>Title</Text>
+            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Title" />
+            {titleError ? <Text style={styles.error}>{titleError}</Text> : null}
+            <Text style={styles.sectionTitle}>Preview</Text>
+            <TextInput style={styles.input} value={preview} onChangeText={setPreview} placeholder="Preview" />
+            {previewError ? <Text style={styles.error}>{previewError}</Text> : null}
+            <Text style={styles.sectionTitle}>Procedure</Text>
+            <TextInput
+              style={[styles.input, { height: 'auto', minHeight: 50 }]}
+              value={procedure}
+              onChangeText={setProcedure}
+              placeholder="Procedure"
+              multiline
+              numberOfLines={undefined}
+            />
+            {procedureError ? <Text style={styles.error}>{procedureError}</Text> : null}
+          </View>
+          <View style={styles.rightColumn}>
+            <Text style={styles.sectionTitle}>Ingredients</Text>
+            {ingredients.map((ingredient, index) => (
+              <View key={index} style={styles.ingredientItem}>
+                <TextInput
+                  style={styles.ingredientInput}
+                  value={ingredient}
+                  onChangeText={(text) => handleIngredientChange(index, text)}
+                  placeholder="Ingredient"
+                />
+                <TouchableOpacity onPress={() => handleRemoveIngredient(index)}>
+                  <MaterialIcons name="delete" size={24} color="red" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {ingredientsError ? <Text style={styles.error}>{ingredientsError}</Text> : null}
+            <TouchableOpacity style={styles.addButton} onPress={handleAddIngredient}>
+              <Text style={styles.addButtonText}>Add Ingredient</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <Button title="Update Recipe" onPress={updateRecipe} />
+        <View style={styles.updateButtonContainer}>
+          <TouchableOpacity style={styles.updateButton} onPress={updateRecipe}>
+            <Text style={styles.updateButtonText}>Update Recipe</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -156,28 +256,34 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 35,
   },
+  deleteButton: {
+    position: 'absolute',
+    top: 30,
+    right: 23,
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 35,
+  },
   container: {
     flex: 0.57,
     backgroundColor: 'white',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 25,
+    paddingVertical: 30,
     marginTop: -20,
-  },
-  section: {
-    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 2,
   },
   input: {
-    borderBottomWidth: 1,
-    borderColor: 'gray',
-    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#08A045',
+    borderRadius: 5,
     padding: 5,
+    marginBottom: 15,
   },
   imagePreviewContainer: {
     marginBottom: 20,
@@ -200,6 +306,65 @@ const styles = StyleSheet.create({
   imageButtonText: {
     color: 'white',
     marginTop: 5,
+  },
+  columnsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  leftColumn: {
+    flex: 1,
+    marginRight: 10,
+  },
+  rightColumn: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  ingredientItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ingredientInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#08A045',
+    borderRadius: 5,
+    padding: 5,
+  },
+  addButton: {
+    backgroundColor: '#08A045',
+    borderRadius: 5,
+    padding: 5,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  updateButtonContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  updateButton: {
+    backgroundColor: '#08A045',
+    borderRadius: 25,
+    width: 335,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  updateButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  error: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 5,
   },
 });
 
